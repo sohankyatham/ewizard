@@ -1,0 +1,27 @@
+pip install -r requirements.txt
+streamlit run app.py --server.port 8502
+
+
+FILE STRUCTURE
+
+ewizard/
+├─ app.py                  # Streamlit entry point (UI)
+├─ requirements.txt
+├─ README.md
+├─ .env                    # secrets (Gemini key) — gitignored
+├─ data/
+│  └─ scans.csv             # auto-created
+│
+├─ core/                    # core logic (no UI)
+│  ├─ __init__.py
+│  ├─ inference.py          # ML model loading + inference
+│  ├─ hardware.py           # servo / GPIO control
+│  ├─ gemini_client.py      # Gemini API calls
+│  └─ config.py             # labels, bin mapping, constants
+│
+├─ utils/                   # helpers
+│  ├─ __init__.py
+│  └─ storage.py            # logging + persistence
+│
+└─ assets/                  # optional
+   └─ diagrams.png

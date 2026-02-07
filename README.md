@@ -10,10 +10,20 @@ We built an **AI-powered, automated e-waste sorter** designed specifically for U
 
 ## How It Works
 
-1. **Place your item** - Simply place any electronic device on the belt. No technical knowledge required.
-2. **Automatic identification** - Our AI system identifies the item and its components
-3. **Smart sorting** - The system automatically sorts your e-waste by category
-4. **Local resources & education** - Users receive personalized guidance on proper disposal options using real local resources
+1. **Place an item on the conveyor**  
+   Students place an electronic item (such as batteries, cables, or small devices) onto the conveyor belt. No technical knowledge about electronics or recycling is required.
+
+2. **On-device AI recognition**  
+   A camera mounted above the conveyor captures an image of the item. A Raspberry Pi running an on-device machine learning model (YOLO-based object detection) identifies the type of e-waste in real time.
+
+3. **Automated sorting**  
+   Based on the model’s prediction, servo motors are actuated to route the item into the appropriate bin (e.g., hazardous batteries, electronic components, or accessories).
+
+4. **Live web dashboard & local guidance**  
+   The classification result is sent to a web dashboard where users can view:
+   - The detected item type and confidence score  
+   - Environmental and safety information  
+   - Personalized disposal guidance using real local Georgia and UGA resources
 
 ## Key Features
 
