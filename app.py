@@ -2,53 +2,57 @@ import streamlit as st
 from datetime import datetime
 from PIL import Image
 
-from core.config import BIN_MAP
+from core.config import BIN_MAP, STATIC_TIPS
 from core.inference import run_model
 from core.gemini_client import get_disposal_tips
 from core.hardware import actuate_sort
-from utils.storage import append_scan, load_scans
+from utils.storage import append_scan, load_scans, clear_scans
 
 
-# ---------- Page setup ----------
-st.set_page_config(
-    page_title="E-Wizard",
-    page_icon="🪄",
-    layout="wide",
-    initial_sidebar_state="expanded",
-)
-
+# ---------------- Page setup ----------------
+st.set_page_config(page_title="E-Wizard", page_icon="🪄", layout="wide")
 st.title("🪄 E-Wizard")
-st.caption("AI-powered e-waste identification + sorting for UGA. Scan items, sort safely, and learn proper disposal.")
+st.caption("AI-powered e-waste identification + sorting for UGA. Scan items, sort safely, and get disposal guidance.")
 
-
-# ---------- Sidebar ----------
+# ---------------- Sidebar ----------------
 st.sidebar.header("Controls")
-
-mode = st.sidebar.radio(
-    "Input mode",
-    ["Upload Image", "Use Camera"],
-    index=0,
-)
-
-use_gemini = st.sidebar.toggle("Gemini disposal tips", value=False)
-use_servo = st.sidebar.toggle("Actuate sorter (servo)", value=False)
+input_mode = st.sidebar.radio("Input Mode", ["Upload", "Camera"], index=0)
+use_gemini = st.sidebar.toggle("Enable Gemini guidance", value=True)
+use_servo = st.sidebar.toggle("Enable servo sorting", value=False)
+dev_mode = st.sidebar.toggle("Developer mode", value=False)
+conf_thresh = st.sidebar.slider("Confidence threshold", 0.0, 1.0, 0.50, 0.05)
 
 st.sidebar.divider()
-st.sidebar.markdown("### Categories")
-st.sidebar.write(", ".join(BIN_MAP.keys()))
-st.sidebar.caption("Tip: Start with Upload mode to move fast.")
+if st.sidebar.button("🗑️ Clear scan history"):
+    clear_scans()
+    st.sidebar.success("History cleared!")
 
+# ---------------- Load history ----------------
+df = load_scans()
 
-# ---------- Layout ----------
-left, right = st.columns([1.1, 0.9], gap="large")
+# ---------------- Hero stats ----------------
+c1, c2, c3, c4 = st.columns(4)
+total = int(len(df))
+haz = int((df["label"] == "battery").sum()) if total else 0
+dev = int((df["label"] == "device").sum()) if total else 0
+unk = int((df["label"] == "unknown").sum()) if total else 0
+
+c1.metric("Total items", total)
+c2.metric("Hazardous diverted", haz)
+c3.metric("Devices", dev)
+c4.metric("Unknown", unk)
+
+st.divider()
+
+# ---------------- Main layout ----------------
+left, right = st.columns([1.05, 0.95], gap="large")
 
 with left:
-    st.subheader("1) Capture or Upload")
+    st.subheader("Input")
+    image = None
 
-    image: Image.Image | None = None
-
-    if mode == "Use Camera":
-        cam = st.camera_input("Take a photo of the item")
+    if input_mode == "Camera":
+        cam = st.camera_input("Take a photo")
         if cam is not None:
             image = Image.open(cam).convert("RGB")
     else:
@@ -61,66 +65,71 @@ with left:
     else:
         st.info("Provide an image to scan an item.")
 
+    scan = st.button("🔍 Scan Item", type="primary", use_container_width=True, disabled=(image is None))
 
 with right:
-    st.subheader("2) Scan + Sort")
+    st.subheader("Results")
 
-    scan_btn = st.button(
-        "🔍 Scan Item",
-        type="primary",
-        use_container_width=True,
-        disabled=(image is None),
-    )
+    if scan and image is not None:
+        with st.spinner("Running detection..."):
+            # run_model returns (label, conf, annotated_img_or_None, raw_optional)
+            label, conf, annotated, raw = run_model(image)
 
-    if scan_btn:
-        with st.spinner("Running model inference..."):
-            label, confidence = run_model(image)
+        if conf < conf_thresh:
+            label = "unknown"
 
         bin_name = BIN_MAP.get(label, BIN_MAP["unknown"])
 
+        # Gemini or fallback
         tips = None
         if use_gemini:
-            with st.spinner("Asking Gemini for disposal guidance..."):
-                tips = get_disposal_tips(label)
+            try:
+                with st.spinner("Generating disposal guidance..."):
+                    tips = get_disposal_tips(label)
+            except Exception:
+                tips = None
 
+        if tips is None:
+            tips = STATIC_TIPS.get(label, STATIC_TIPS["unknown"])
+
+        # Servo actuation (optional)
         if use_servo:
-            with st.spinner("Actuating sorter..."):
+            with st.spinner("Sorting item..."):
                 actuate_sort(bin_name)
 
-        # log scan
+        # Log scan
         append_scan({
             "timestamp": datetime.now().isoformat(timespec="seconds"),
             "label": label,
-            "confidence": float(confidence),
+            "confidence": float(conf),
             "bin": bin_name,
         })
 
+        # Display results
         st.success("Scan complete!")
-        c1, c2 = st.columns(2)
-        c1.metric("Detected", label)
-        c2.metric("Confidence", f"{confidence:.2f}")
-
+        m1, m2 = st.columns(2)
+        m1.metric("Detected", label)
+        m2.metric("Confidence", f"{conf:.2f}")
         st.write("**Bin:**", bin_name)
-        if tips:
-            st.info(tips)
 
+        if annotated is not None:
+            st.image(annotated, caption="YOLO annotated output", use_container_width=True)
+
+        st.subheader("Disposal guidance")
+        st.info(tips)
+
+        if dev_mode and raw is not None:
+            st.subheader("Raw detections (dev)")
+            st.write(raw)
+
+    else:
+        st.caption("Results will appear here after you scan an item.")
 
 st.divider()
 
-
-# ---------- History + Stats ----------
-st.subheader("Recent Scans")
-
+st.subheader("Recent scans")
 df = load_scans()
 if len(df) == 0:
     st.caption("No scans yet.")
 else:
-    st.dataframe(df.sort_values("timestamp", ascending=False), use_container_width=True)
-
-st.subheader("Stats")
-if len(df) > 0:
-    s1, s2, s3, s4 = st.columns(4)
-    s1.metric("Total", int(len(df)))
-    s2.metric("Batteries", int((df["label"] == "battery").sum()))
-    s3.metric("Devices", int((df["label"] == "device").sum()))
-    s4.metric("Unknown", int((df["label"] == "unknown").sum()))
+    st.dataframe(df.sort_values("timestamp", ascending=False).head(25), use_container_width=True)
