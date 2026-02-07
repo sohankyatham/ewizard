@@ -1,0 +1,9 @@
+path: C:\Users\hieu1\ewaste_dataset
+train: train/images
+val: val/images
+
+names:
+  0: CPU
+  1: GPU
+  2: RAM
+  3: USB_Drive

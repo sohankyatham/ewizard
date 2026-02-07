@@ -2,6 +2,11 @@ pip install -r requirements.txt
 streamlit run app.py --server.port 8502
 
 
+Run ML Model from UGA_Hackathon/:
+cd C:\Users\sohky\UGA_Hackathon\ewizard\ml
+python live_demo.py
+
+
 FILE STRUCTURE
 
 ewizard/

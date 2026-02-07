@@ -3,3 +3,10 @@ pandas
 pillow
 python-dotenv
 requests
+ultralytics
+opencv-python
+numpy
+ultralytics
+opencv-python
+numpy
+torch

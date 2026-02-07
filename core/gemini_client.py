@@ -10,22 +10,20 @@ def get_disposal_tips(item_label: str, location_hint: str = "University of Georg
         return "Gemini is not configured. Add GEMINI_API_KEY to your .env file."
 
     prompt = f"""
-Give disposal guidance for a student.
+You are helping a student at the University of Georgia (Athens, GA) dispose of e-waste safely.
 
-Item: {item_label}
-Location: {location_hint}
+Item detected: {item_label}
 
-Return ONLY plain text in this exact format:
+Write a concise response in this exact format:
 
 What it is: <1 sentence>
-Safety: <1 sentence>
+Safety/Data: <1 sentence>  (mention data wiping if it's a flash drive)
 Disposal:
 - <bullet 1>
 - <bullet 2>
 - <bullet 3>
-(Optional) Local tip: <1 sentence>
 
-Keep it under 120 words.
+Keep it under 90 words. Prefer campus/local Georgia options when possible.
 """
 
     model_name = "gemini-2.5-flash"
@@ -41,7 +39,8 @@ Keep it under 120 words.
 
     try:
         r = requests.post(url, json=payload, timeout=30)
-        r.raise_for_status()
+        if r.status_code != 200:
+            return f"Gemini error {r.status_code}: {r.text}"
         data = r.json()
 
         candidates = data.get("candidates", [])

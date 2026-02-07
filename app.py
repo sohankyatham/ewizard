@@ -20,7 +20,8 @@ input_mode = st.sidebar.radio("Input Mode", ["Upload", "Camera"], index=0)
 use_gemini = st.sidebar.toggle("Enable Gemini guidance", value=True)
 use_servo = st.sidebar.toggle("Enable servo sorting", value=False)
 dev_mode = st.sidebar.toggle("Developer mode", value=False)
-conf_thresh = st.sidebar.slider("Confidence threshold", 0.0, 1.0, 0.50, 0.05)
+conf_thresh = st.sidebar.slider("Confidence threshold", 0.0, 1.0, 0.20, 0.05)
+
 
 st.sidebar.divider()
 if st.sidebar.button("🗑️ Clear scan history"):
@@ -36,13 +37,13 @@ df = load_scans()
 # ---------------- Hero stats ----------------
 c1, c2, c3, c4 = st.columns(4)
 total = int(len(df))
-haz = int((df["label"] == "battery").sum()) if total else 0
-dev = int(df["label"].isin(["device", "ram_stick"]).sum()) if total else 0
+components = int(df["label"].isin(["cpu", "ram_stick"]).sum()) if total else 0
+storage = int((df["label"] == "flash_drive").sum()) if total else 0
 unk = int((df["label"] == "unknown").sum()) if total else 0
 
 c1.metric("Total items", total)
-c2.metric("Hazardous diverted", haz)
-c3.metric("Devices", dev)
+c2.metric("Components (CPU/RAM)", components)
+c3.metric("Storage (Flash drives)", storage)
 c4.metric("Unknown", unk)
 
 st.divider()

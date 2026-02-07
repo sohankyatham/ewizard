@@ -1,14 +1,15 @@
 BIN_MAP = {
-    "battery": "Hazardous (Batteries)",
-    "device": "Devices / Components",
-    "cable": "Cables / Accessories",
+    "cpu": "Components (CPU/RAM)",
+    "ram_stick": "Components (CPU/RAM)",
+    "flash_drive": "Storage (USB/Flash Drives)",
     "unknown": "Unknown / Manual Review",
 }
 
+
 # Fallback tips if Gemini fails / no internet
 STATIC_TIPS = {
-    "battery": "Batteries are hazardous. Do NOT trash them. Use battery drop-off bins or an e-waste center.",
-    "device": "Devices should go to certified e-waste recycling. Remove personal data if applicable.",
-    "cable": "Cables/accessories can be recycled as e-waste. Bundle them and drop off with electronics recycling.",
-    "unknown": "Item not recognized confidently. Please ask a volunteer or use a campus e-waste drop-off location.",
+    "cpu": "CPU is an electronic component. Recycle via an e-waste program; do not throw in the trash.",
+    "ram_stick": "RAM is an electronic component. Recycle via an e-waste drop-off or certified recycler.",
+    "flash_drive": "Flash drives can contain personal data. If possible, wipe or destroy data before recycling via e-waste.",
+    "unknown": "Item not recognized confidently. Please use a campus e-waste drop-off or ask a volunteer for help.",
 }

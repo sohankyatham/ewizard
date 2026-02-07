@@ -40,3 +40,15 @@ Place an electronic item on the belt and let our system do the work. Follow the 
 ## Support
 
 For assistance or questions about e-waste disposal, reach out to our team or consult the educational resources provided by the sorter system.
+
+
+
+## DEV SET UP
+1. Clone the repo
+2. Create a `.env` file in the root: GEMINI_API_KEY=your_api_key_here
+3. Install dependencies: pip install -r requirements.txt
+4. Create a Gemini API key:
+   https://aistudio.google.com/app/apikey
+5. Add your key:
+   GEMINI_API_KEY=your_key_here
+6. Run the app
