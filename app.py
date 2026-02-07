@@ -26,6 +26,9 @@ st.sidebar.divider()
 if st.sidebar.button("🗑️ Clear scan history"):
     clear_scans()
     st.sidebar.success("History cleared!")
+# ---------------- Session state ----------------
+if "last_scan" not in st.session_state:
+    st.session_state.last_scan = None
 
 # ---------------- Load history ----------------
 df = load_scans()
@@ -34,7 +37,7 @@ df = load_scans()
 c1, c2, c3, c4 = st.columns(4)
 total = int(len(df))
 haz = int((df["label"] == "battery").sum()) if total else 0
-dev = int((df["label"] == "device").sum()) if total else 0
+dev = int(df["label"].isin(["device", "ram_stick"]).sum()) if total else 0
 unk = int((df["label"] == "unknown").sum()) if total else 0
 
 c1.metric("Total items", total)
@@ -68,7 +71,11 @@ with left:
     scan = st.button("🔍 Scan Item", type="primary", use_container_width=True, disabled=(image is None))
 
 with right:
-    st.subheader("Results")
+    st.subheader("Results") 
+    if (not scan) and st.session_state.last_scan:
+        last = st.session_state.last_scan
+        st.info(f"Last scan: **{last['label']}** → **{last['bin']}** (conf {last['confidence']:.2f})")
+
 
     if scan and image is not None:
         with st.spinner("Running detection..."):
@@ -82,15 +89,25 @@ with right:
 
         # Gemini or fallback
         tips = None
+
+        st.session_state.last_scan = {
+        "label": label,
+        "confidence": conf,
+        "bin": bin_name,
+        "tips": tips,   # this will be filled after Gemini runs
+        }
+        
         if use_gemini:
             try:
                 with st.spinner("Generating disposal guidance..."):
                     tips = get_disposal_tips(label)
-            except Exception:
-                tips = None
+            except Exception as e:
+                tips = f"Gemini error: {e}"
 
         if tips is None:
             tips = STATIC_TIPS.get(label, STATIC_TIPS["unknown"])
+
+        st.session_state.last_scan["tips"] = tips
 
         # Servo actuation (optional)
         if use_servo:
@@ -116,7 +133,7 @@ with right:
             st.image(annotated, caption="YOLO annotated output", use_container_width=True)
 
         st.subheader("Disposal guidance")
-        st.info(tips)
+        st.text_area("Guidance", tips, height=180)
 
         if dev_mode and raw is not None:
             st.subheader("Raw detections (dev)")
