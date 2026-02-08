@@ -9,10 +9,42 @@ from core.hardware import actuate_sort
 from utils.storage import append_scan, load_scans, clear_scans
 
 
+# ------- Layout & Component Improvements -----
+# Set page config early
+st.set_page_config(
+    page_title="E-Waste Wizard",
+    page_icon="✨",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+# Add custom CSS for polish
+st.markdown("""
+<style>
+    .main {
+        padding: 2rem;
+    }
+    .stButton>button {
+        width: 100%;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        padding: 0.75rem;
+    }
+    h1 {
+        font-size: 2.5rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, #7c3aed, #ec4899);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+
 # ---------------- Page setup ----------------
 st.set_page_config(page_title="E-Wizard", page_icon="🪄", layout="wide")
 st.title("🪄 E-Wizard")
 st.caption("AI-powered e-waste identification + sorting for UGA. Scan items, sort safely, and get disposal guidance.")
+
 
 # ---------------- Sidebar ----------------
 st.sidebar.header("Controls")

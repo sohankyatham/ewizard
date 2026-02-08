@@ -1,8 +1,8 @@
 BIN_MAP = {
-    "cpu": "Components (CPU/RAM)",
-    "ram_stick": "Components (CPU/RAM)",
-    "flash_drive": "Storage (USB/Flash Drives)",
-    "unknown": "Unknown / Manual Review",
+    "cpu": "🧩 Components (CPU/RAM)",
+    "ram_stick": "🧩 Components (CPU/RAM)",
+    "flash_drive": "💾 Storage (USB/Flash Drives)",
+    "unknown": "❓ Unknown / Manual Review",
 }
 
 
