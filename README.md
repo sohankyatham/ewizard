@@ -1,5 +1,6 @@
 # E-Waste Sorter for UGA
 
+- By: Sohan Kyatham, Zeeshan Ali, Praneel Surath, & Aayan Jamsandekar
 ## The Problem
 
 E-waste is one of the fastest-growing waste streams on college campuses. Most students don't know how to properly dispose of electronics, leading to improper handling and environmental impact.
