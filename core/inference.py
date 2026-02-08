@@ -32,7 +32,7 @@ def run_model(image: Image.Image) -> Tuple[str, float, Optional[Image.Image], Op
     rgb = np.array(image.convert("RGB"))
     bgr = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
 
-    results = model.predict(bgr, conf=0.25, verbose=False)
+    results = model.predict(bgr, conf=0.05, verbose=False)
     r0 = results[0]
 
     raw: Dict[str, Any] = {"detections": []}
@@ -43,6 +43,8 @@ def run_model(image: Image.Image) -> Tuple[str, float, Optional[Image.Image], Op
     # Pick highest-confidence detection as "the item"
     best_label = "unknown"
     best_conf = 0.0
+    best_class_name = None
+
 
     names = r0.names  # class id -> class name
 
@@ -61,6 +63,13 @@ def run_model(image: Image.Image) -> Tuple[str, float, Optional[Image.Image], Op
         if conf > best_conf:
             best_conf = conf
             best_label = mapped
+            best_class_name = cls_name
+
+    raw["top"] = {
+    "class_name": best_class_name,
+    "mapped_label": best_label,
+    "confidence": best_conf,
+    }
 
     # Annotated image
     annotated_bgr = r0.plot()
@@ -68,3 +77,4 @@ def run_model(image: Image.Image) -> Tuple[str, float, Optional[Image.Image], Op
     annotated_pil = Image.fromarray(annotated_rgb)
 
     return best_label, best_conf, annotated_pil, raw
+    

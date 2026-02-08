@@ -20,7 +20,7 @@ input_mode = st.sidebar.radio("Input Mode", ["Upload", "Camera"], index=0)
 use_gemini = st.sidebar.toggle("Enable Gemini guidance", value=True)
 use_servo = st.sidebar.toggle("Enable servo sorting", value=False)
 dev_mode = st.sidebar.toggle("Developer mode", value=False)
-conf_thresh = st.sidebar.slider("Confidence threshold", 0.0, 1.0, 0.20, 0.05)
+conf_thresh = st.sidebar.slider("Confidence threshold", 0.0, 1.0, 0.25, 0.05)
 
 
 st.sidebar.divider()
@@ -30,6 +30,8 @@ if st.sidebar.button("🗑️ Clear scan history"):
 # ---------------- Session state ----------------
 if "last_scan" not in st.session_state:
     st.session_state.last_scan = None
+if "pending_override" not in st.session_state:
+    st.session_state.pending_override = False
 
 # ---------------- Load history ----------------
 df = load_scans()
@@ -82,11 +84,37 @@ with right:
         with st.spinner("Running detection..."):
             # run_model returns (label, conf, annotated_img_or_None, raw_optional)
             label, conf, annotated, raw = run_model(image)
+            st.session_state.pending_override = True
 
-        if conf < conf_thresh:
+        low_conf = conf < conf_thresh
+        if low_conf:
             label = "unknown"
+            st.warning("Low confidence — sending to Manual Review. You can override below.")
+        else:
+            st.session_state.pending_override = False
 
         bin_name = BIN_MAP.get(label, BIN_MAP["unknown"])
+
+        was_overridden = False
+
+        # Manual override (demo safety)
+        override_label = None
+        if st.session_state.pending_override and label == "unknown":
+            st.subheader("Manual override")
+            cA, cB, cC = st.columns(3)
+            if cA.button("Mark as CPU"):
+                override_label = "cpu"
+            if cB.button("Mark as RAM"):
+                override_label = "ram_stick"
+            if cC.button("Mark as Flash Drive"):
+                override_label = "flash_drive"
+
+            if override_label is not None:
+                label = override_label
+                bin_name = BIN_MAP.get(label, BIN_MAP["unknown"])
+                was_overridden = True
+                st.success(f"Override applied: {label} → {bin_name}")
+                st.session_state.pending_override = False
 
         # Gemini or fallback
         tips = None
@@ -95,7 +123,9 @@ with right:
         "label": label,
         "confidence": conf,
         "bin": bin_name,
-        "tips": tips,   # this will be filled after Gemini runs
+        "tips": tips,  # this will be filled after Gemini runs
+        "raw": raw, 
+        "low_conf": low_conf,
         }
         
         if use_gemini:
@@ -109,9 +139,12 @@ with right:
             tips = STATIC_TIPS.get(label, STATIC_TIPS["unknown"])
 
         st.session_state.last_scan["tips"] = tips
+        st.session_state.last_scan["label"] = label
+        st.session_state.last_scan["bin"] = bin_name
+
 
         # Servo actuation (optional)
-        if use_servo:
+        if use_servo and (not low_conf):
             with st.spinner("Sorting item..."):
                 actuate_sort(bin_name)
 
@@ -121,6 +154,7 @@ with right:
             "label": label,
             "confidence": float(conf),
             "bin": bin_name,
+            "overridden": was_overridden,
         })
 
         # Display results
@@ -129,12 +163,34 @@ with right:
         m1.metric("Detected", label)
         m2.metric("Confidence", f"{conf:.2f}")
         st.write("**Bin:**", bin_name)
+        if was_overridden:
+            st.caption("Label was manually overridden by user")
+
+        if raw and "top" in raw and raw["top"]["class_name"] is not None:
+            st.caption(
+                f"Top YOLO: {raw['top']['class_name']} "
+                f"({raw['top']['confidence']:.2f}) → {raw['top']['mapped_label']}"
+            )
 
         if annotated is not None:
             st.image(annotated, caption="YOLO annotated output", use_container_width=True)
 
-        st.subheader("Disposal guidance")
-        st.text_area("Guidance", tips, height=180)
+        st.subheader("♻️ Disposal Guidance")
+
+        def render_guidance(md: str):
+            parts = md.split("## ")
+            for part in parts:
+                part = part.strip()
+                if not part:
+                    continue
+                title, *rest = part.split("\n", 1)
+                body = rest[0].strip() if rest else ""
+                with st.container(border=True):
+                    st.markdown(f"### {title.strip()}")
+                    st.markdown(body)
+
+        render_guidance(tips)
+
 
         if dev_mode and raw is not None:
             st.subheader("Raw detections (dev)")

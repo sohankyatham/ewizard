@@ -3,7 +3,7 @@ import pandas as pd
 
 DATA_DIR = "data"
 CSV_PATH = os.path.join(DATA_DIR, "scans.csv")
-COLUMNS = ["timestamp", "label", "confidence", "bin"]
+COLUMNS = ["timestamp", "label", "confidence", "bin", "overridden"]
 
 def ensure_storage():
     os.makedirs(DATA_DIR, exist_ok=True)
