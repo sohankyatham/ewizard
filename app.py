@@ -52,6 +52,7 @@ input_mode = st.sidebar.radio("Input Mode", ["Upload", "Camera"], index=0)
 use_gemini = st.sidebar.toggle("Enable Gemini guidance", value=True)
 use_servo = st.sidebar.toggle("Enable servo sorting", value=False)
 dev_mode = st.sidebar.toggle("Developer mode", value=False)
+demo_mode = st.sidebar.toggle("🧪 Demo Mode (manual)", value=False)
 conf_thresh = st.sidebar.slider("Confidence threshold", 0.0, 1.0, 0.25, 0.05)
 
 
@@ -107,6 +108,72 @@ with left:
 
 with right:
     st.subheader("Results") 
+    # ---------------- Demo Mode (manual trigger) ----------------
+    if demo_mode:
+        st.info("Demo Mode is ON: click a button to simulate a detection (no Pi connection).")
+        b1, b2, b3, b4 = st.columns(4)
+
+        chosen = None
+        if b1.button("CPU"):
+            chosen = ("cpu", 0.95)
+        if b2.button("RAM"):
+            chosen = ("ram_stick", 0.95)
+        if b3.button("Flash Drive"):
+            chosen = ("flash_drive", 0.95)
+        if b4.button("Unknown"):
+            chosen = ("unknown", 0.40)
+
+        if chosen is not None:
+            label, conf = chosen
+            low_conf = (label == "unknown") or (conf < conf_thresh)
+            bin_name = BIN_MAP.get(label, BIN_MAP["unknown"])
+
+            # Guidance
+            tips = None
+            if use_gemini:
+                try:
+                    with st.spinner("Generating disposal guidance..."):
+                        tips = get_disposal_tips(label)
+                except Exception as e:
+                    tips = f"Gemini error: {e}"
+            if tips is None:
+                tips = STATIC_TIPS.get(label, STATIC_TIPS["unknown"])
+
+            # Optional servo (only if you want to demo servo from laptop)
+            if use_servo and (not low_conf):
+                with st.spinner("Sorting item..."):
+                    actuate_sort(bin_name)
+
+            # Save last scan + log it
+            st.session_state.last_scan = {
+                "label": label,
+                "confidence": conf,
+                "bin": bin_name,
+                "tips": tips,
+                "raw": {"demo_mode": True},
+                "low_conf": low_conf,
+            }
+
+            append_scan({
+                "timestamp": datetime.now().isoformat(timespec="seconds"),
+                "label": label,
+                "confidence": float(conf),
+                "bin": bin_name,
+                "overridden": False,
+            })
+
+            st.success("Demo scan logged!")
+            m1, m2 = st.columns(2)
+            m1.metric("Detected", label)
+            m2.metric("Confidence", f"{conf:.2f}")
+            st.write("**Bin:**", bin_name)
+
+            st.subheader("♻️ Disposal Guidance")
+            st.write(tips)
+
+        # Stop here so the normal scan flow doesn't run under demo mode
+        st.stop()
+
     if (not scan) and st.session_state.last_scan:
         last = st.session_state.last_scan
         st.info(f"Last scan: **{last['label']}** → **{last['bin']}** (conf {last['confidence']:.2f})")

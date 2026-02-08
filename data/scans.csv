@@ -87,4 +87,8 @@ timestamp,label,confidence,bin,overridden
 2026-02-08T00:02:39,flash_drive,0.3047118186950683,Storage (USB/Flash Drives),False
 2026-02-08T00:04:05,unknown,0.0891565307974815,Unknown / Manual Review,False
 2026-02-08T00:29:36,flash_drive,0.3047118186950683,💾 Storage (USB/Flash Drives),False
-2026-02-08T01:02:16,flash_drive,0.30471181869506836,💾 Storage (USB/Flash Drives),False
+2026-02-08T01:02:16,flash_drive,0.3047118186950683,💾 Storage (USB/Flash Drives),False
+2026-02-08T05:12:19,cpu,0.93,🧩 Components (CPU/RAM),False
+2026-02-08T05:42:35,cpu,0.9800606966018676,🧩 Components (CPU/RAM),False
+2026-02-08T05:51:47,flash_drive,0.3047118186950683,💾 Storage (USB/Flash Drives),False
+2026-02-08T06:08:02,cpu,0.95,🧩 Components (CPU/RAM),False
